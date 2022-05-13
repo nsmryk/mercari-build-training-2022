@@ -78,7 +78,7 @@ func addItem(c echo.Context) error {
 	} else {
 		items.Items = [] Item{item}
 	}
-	output, err := json.MarshalIndent(&items, "", "\t")
+	output, err := json.Marshal(&items)
 	if err != nil {
 		handleError(c, "Failed to encode items to a JSON string")
 	}
@@ -91,6 +91,21 @@ func addItem(c echo.Context) error {
 	message := fmt.Sprintf("item received: %s %s", name, category)
 	res := Response{Message: message}
 	return c.JSON(http.StatusOK, res)
+}
+
+func showItems(c echo.Context) error {
+	// Read items.json
+	file, err := ioutil.ReadFile("items.json")
+	if err != nil {
+		panic(err)
+	}
+	var items Items
+	err = json.Unmarshal(file, &items)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Print item
+	return c.JSON(http.StatusOK, items)
 }
 
 func getImg(c echo.Context) error {
@@ -127,6 +142,7 @@ func main() {
 
 	// Routes
 	e.GET("/", root)
+	e.GET("/items", showItems)
 	e.POST("/items", addItem)
 	e.GET("/image/:imageFilename", getImg)
 
