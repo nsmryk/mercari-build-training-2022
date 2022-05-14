@@ -61,12 +61,6 @@ func addItem(c echo.Context) error {
 		handleError(c, "Failed to read the file")
 	}
 
-
-	file, err := ioutil.ReadAll(fp)
-	if err != nil {
-		handleError(c, "Failed to read the file")
-	}
-
 	// Add item
 	var items Items
 	if len(file) != 0 {
