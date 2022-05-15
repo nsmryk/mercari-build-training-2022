@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"database/sql"
 	"os"
 
@@ -77,19 +76,19 @@ func GetItems() ([]Item, error) {
 func AddItem(item Item) error {
 	id, err :=  uuid.NewUUID()
 	if err != nil {
-		return fmt.Errorf("Error: %s\n", "canot make a new uuid")
+		return err
 	}
 	if db == nil {
-		return fmt.Errorf("Error: %s\n", "db is nil")
+		return err
 	}
 	stmt, err := db.Prepare("INSERT INTO items (id, name, category) VALUES (?,?,?)")
 	if err != nil {
-		return fmt.Errorf("Error: %s\n", "cannot use prepare function")
+		return err
 	}
 	defer stmt.Close()
 	_, err = stmt.Exec(id, item.Name, item.Category)
 	if err != nil {
-		return fmt.Errorf("Error: %s\n", "cannot add a new item to db")
+		return err
 	}	
 	return nil
 }

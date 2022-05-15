@@ -6,8 +6,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	//"encoding/json"
-	//"io/ioutil"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -90,7 +88,7 @@ func main() {
 		fmt.Println("database error: ",err,"\n")
 	}
 	fmt.Println(sqlDB)
-	// defer sqlDB.Close()
+	defer sqlDB.Close()
 	e := echo.New()
 
 	// Middleware
