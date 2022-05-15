@@ -6,8 +6,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	//"encoding/json"
-	//"io/ioutil"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -63,23 +61,9 @@ func showItems(c echo.Context) error {
 	var err error
 	// Get a list of items
 	items.Items, err = model.GetItems()
-	// // Read items.json
-	// fp, err := os.OpenFile("items.json", os.O_RDWR|os.O_CREATE, 0664)
-	// if err != nil {
-	// 	handleError(c, err.Error())
-	// }
-	// defer fp.Close()
-
-	// file, err := ioutil.ReadAll(fp)
 	if err != nil {
 		handleError(c, err.Error())
 	}
-
-	//err = json.Unmarshal(file, &items)
-	// if err != nil {
-	// 	handleError(c, "Failed to encode items to a JSON string")
-//   }
-	// Print item
 	return c.JSON(http.StatusOK, items)
 }
 
@@ -104,7 +88,7 @@ func main() {
 		fmt.Println("database error: ",err,"\n")
 	}
 	fmt.Println(sqlDB)
-	// defer sqlDB.Close()
+	defer sqlDB.Close()
 	e := echo.New()
 
 	// Middleware
