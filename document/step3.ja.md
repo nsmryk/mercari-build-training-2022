@@ -138,7 +138,13 @@ itemsテーブルは以下のように定義し、スキーマを `db/items.db` 
 
 **:beginner: Point**
 
-* jsonファイルではなくデータベース(SQLite)にデータを保存する利点は何がありますか？
+* jsonファイルではなくデータベース(SQLite)にデータを保存する利点は何がありますか？ → 更新が容易でデータの管理がしやすい。　同時アクセスが可能になる。分析しやすくなる。
+
+- `sql.DB`でDBにアクセスする
+- `sql.Open("sqlite3", dbSource)`で取得したオブジェクトでDBを操作する
+- `db.Exec(cmd)`検索結果を取得しない時に使う(CREATE INSERT, UPDATE, DELETE)
+- `db.Query(cmd)`で複数の検索結果を取得する(SELECT)
+  - ex. `db.Query("SELECT * FROM items")`
 
 ## 5. 商品を検索する
 
@@ -179,7 +185,12 @@ Items table example:
 **:beginner: Point**
 
 * Hash化とはなにか？
+  * ハッシュ化は特定の計算手法を用いて元のデータを不規則な文字列に置換する処理のこと。
+  * 暗号化との違い→暗号化は可逆的な変換でハッシュ化は不可逆的な変換
 * sha256以外にどんなハッシュ関数があるか調べてみましょう
+  * MD5
+  * SHA-512
+  * RIPEMD-160
 
 ## 7. 商品の詳細を返す
 
