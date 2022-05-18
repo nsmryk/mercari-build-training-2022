@@ -1,9 +1,8 @@
 package model
 
 import (
-	"database/sql"
+	"database/sql"el/task.go
 	"os"
-
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/google/uuid"
 )
@@ -17,38 +16,7 @@ type Items struct {
 	Items []Item `json:"items"` 
 }
 
-var db *sql.DB
-
-const dbSchema = "../db/items.db"
-const dbSource = "../db/mercari.sqlite3"
-
-func DBConnection() (*sql.DB, error) {
-	// open database
-	db_opened, err := sql.Open("sqlite3", dbSource)
-	if err != nil {
-		return nil, err
-	}
-	db = db_opened
-
-	file, err := os.OpenFile(dbSchema, os.O_RDWR|os.O_CREATE, 0664)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	schema, err := os.ReadFile(dbSchema)
-	if err != nil{
-		return nil, err
-	}
-
-	_, err = db.Exec(string(schema))
-	if err != nil{
-		return nil, err
-	}
-	return db, nil
-}
-
-func GetItems() ([]Item, error) {
+func GetItems(db *sql.DB) ([]Item, error) {
 	var err error
 	cmd := "SELECT * FROM items"
 	rows, _ := db.Query(cmd)
@@ -73,7 +41,7 @@ func GetItems() ([]Item, error) {
 	return item_list, nil
 }
 
-func AddItem(item Item) error {
+func AddItem(item Item, db *sql.DB) error {
 	id, err :=  uuid.NewUUID()
 	if err != nil {
 		return err
@@ -93,3 +61,24 @@ func AddItem(item Item) error {
 	return nil
 }
 
+func SearchItem(name string, db *sql.DB) ([]Item, error) {
+	rows, err := db.Query("SELECT * FROM items WHERE name = $1", name)
+	defer rows.Close()
+	var item_list []Item
+	//Add items to a list in a for roop
+	for rows.Next() {
+		var item Item
+		var id uuid.UUID
+		// Add data
+		err = rows.Scan(&id, &item.Name, &item.Category)
+		if err != nil {
+			return nil, err
+		}
+		item_list = append(item_list, item)
+	}
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+	return item_list, nil
+}
