@@ -2,33 +2,36 @@ package main
 
 import (
 	"fmt"
+	"database/sql"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/gommon/log"
+	"mercari-build-training-2022/app/model"
 	"net/http"
 	"os"
 	"path"
 	"strings"
-	"encoding/json"
-	"io/ioutil"
-
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/labstack/gommon/log"
 )
 
 const (
-	ImgDir = "images"
+	ImgDir   = "image"
+	dbSchema = "../db/items.db"
+	dbSource = "../db/mercari.sqlite3"
 )
+
+var db *sql.DB
 
 type Response struct {
 	Message string `json:"message"`
 }
 
 type Item struct {
-	Name string `json:"name"`
+	Name     string `json:"name"`
 	Category string `json:"category"`
 }
 
 type Items struct {
-	Items []Item `json:"items"` 
+	Items []Item `json:"items"`
 }
 
 func root(c echo.Context) error {
@@ -38,74 +41,78 @@ func root(c echo.Context) error {
 
 func handleError(c echo.Context, error_message string) error {
 	c.Logger().Errorf("%s", error_message)
-	res := Response{Message: error_message} 
- 	return c.JSON(http.StatusBadRequest, res) 
+	res := Response{Message: error_message}
+	return c.JSON(http.StatusBadRequest, res)
+}
+
+func DBConnection() error {
+	// open database
+	db_opened, err := sql.Open("sqlite3", dbSource)
+	if err != nil {
+		return err
+	}
+	db = db_opened
+
+	file, err := os.OpenFile(dbSchema, os.O_RDWR|os.O_CREATE, 0664)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	schema, err := os.ReadFile(dbSchema)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(string(schema))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func DBClose() {
+	db.Close()
 }
 
 func addItem(c echo.Context) error {
 	// Get form data
 	name := c.FormValue("name")
 	category := c.FormValue("category")
-	item := Item{name, category}
+	item := model.Item{name, category}
 	c.Logger().Infof("Receive item: %s %s", name, category)
-
-	// Read items.json
-	fp, err := os.OpenFile("items.json", os.O_RDWR|os.O_CREATE, 0664)
+	// Add item to db
+	err := model.AddItem(item, db)
 	if err != nil {
-		handleError(c, "Failed to open items.json")
+		handleError(c, err.Error())
 	}
-	defer fp.Close()
-
-	file, err := ioutil.ReadAll(fp)
-	if err != nil {
-		handleError(c, "Failed to read the file")
-	}
-
-	// Add item
-	var items Items
-	if len(file) != 0 {
-		err = json.Unmarshal(file, &items)
-		if err != nil {
-			handleError(c, "Failed to encode items to a JSON string")
-		}
-		items.Items = append(items.Items, item)
-	} else {
-		items.Items = [] Item{item}
-	}
-	output, err := json.Marshal(&items)
-	if err != nil {
-		handleError(c, "Failed to encode items to a JSON string")
-	}
-
-	// Write json
-	err = ioutil.WriteFile("items.json", output, 0644)
-	if err != nil {
-		handleError(c, "Failed to save data in json file")
-	}
-	message := fmt.Sprintf("item received: %s %s", name, category)
+	message := fmt.Sprintf("item added: %s %s", name, category)
 	res := Response{Message: message}
 	return c.JSON(http.StatusOK, res)
 }
 
 func showItems(c echo.Context) error {
-	// Read items.json
-	fp, err := os.OpenFile("items.json", os.O_RDWR|os.O_CREATE, 0664)
+	var items model.Items
+	var err error
+	// Get a list of items
+	items.Items, err = model.GetItems(db)
 	if err != nil {
-		handleError(c, "Failed to open items.json")
+		handleError(c, err.Error())
 	}
-	defer fp.Close()
+	return c.JSON(http.StatusOK, items)
+}
 
-	file, err := ioutil.ReadAll(fp)
+func searchItem(c echo.Context) error {
+	// Get a parameter
+	var items model.Items
+	var err error
+	name := c.QueryParam("keyword")
+	fmt.Println("name is : %s", name)
+	// Search items in items.db
+	items.Items, err = model.SearchItem(name, db)
 	if err != nil {
-		handleError(c, "Failed to read the file")
+		handleError(c, err.Error())
 	}
-
-	var items Items
-	err = json.Unmarshal(file, &items)
-	if err != nil {
-		handleError(c, "Failed to encode items to a JSON string")
-	}
-	// Print item
 	return c.JSON(http.StatusOK, items)
 }
 
@@ -125,6 +132,11 @@ func getImg(c echo.Context) error {
 }
 
 func main() {
+	err := DBConnection()
+	if err != nil {
+		fmt.Println("database error: ", err, "\n")
+	}
+	defer DBClose()
 	e := echo.New()
 
 	// Middleware
@@ -145,7 +157,8 @@ func main() {
 	e.GET("/", root)
 	e.GET("/items", showItems)
 	e.POST("/items", addItem)
-	e.GET("/image/:imageFilename", getImg)
+	e.GET("/search", searchItem)
+	e.GET("/image/:itemImg", getImg)
 
 
 	// Start server

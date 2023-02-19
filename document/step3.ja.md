@@ -138,7 +138,13 @@ itemsテーブルは以下のように定義し、スキーマを `db/items.db` 
 
 **:beginner: Point**
 
-* jsonファイルではなくデータベース(SQLite)にデータを保存する利点は何がありますか？
+* jsonファイルではなくデータベース(SQLite)にデータを保存する利点は何がありますか？ → 更新が容易でデータの管理がしやすい。　同時アクセスが可能になる。分析しやすくなる。
+
+- `sql.DB`でDBにアクセスする
+- `sql.Open("sqlite3", dbSource)`で取得したオブジェクトでDBを操作する
+- `db.Exec(cmd)`検索結果を取得しない時に使う(CREATE INSERT, UPDATE, DELETE)
+- `db.Query(cmd)`で複数の検索結果を取得する(SELECT)
+  - ex. `db.Query("SELECT * FROM items")`
 
 ## 5. 商品を検索する
 
@@ -151,6 +157,7 @@ $ curl -X GET 'http://127.0.0.1:9000/search?keyword=jacket'
 {"items": [{"name": "jacket", "category": "fashion"}, ...]}
 ```
 
+- [`QueryParameter`](https://echo.labstack.com/guide/#:~:text=Query%20Parameters-,%F0%9F%94%97,-/show%3Fteam%3Dx)を使う　
 ## 6. 画像を登録する
 
 商品情報に画像(image)を登録できるように、`GET /items`と`POST /items`のエンドポイントを変更します。
